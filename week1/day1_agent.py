@@ -25,14 +25,14 @@ while True:
     
     response = client.chat.completions.create(
         model="deepseek-chat",                  # 用哪个模型；因为连的是 DeepSeek，所以写 DeepSeek 的模型名
-        messages = messages
+        messages = messages,
+        max_tokens=50
     )
     reply = response.choices[0].message.content
     print(reply)
-    #这个列表就是记忆，跨轮累加
+    # 这个列表就是记忆，跨轮累加
     messages.append({"role":"assistant","content":reply})
-    # print(response.choices[0].finish_reason)
-    # print(response.usage.prompt_tokens)
+    print(f"[finish_reason={response.choices[0].finish_reason}  prompt_tokens={response.usage.prompt_tokens}]")
     print("========================")
 
 

@@ -7,7 +7,11 @@
 ## 进度
 
 ### Week 1（6.10–6.16）：底层原理
-- [ ] `week1/day1_agent.py` — Claude API 跑通多轮对话，理解 messages / role / stop_reason
+- [x] `week1/day1_agent.py` 
+    - 用 DeepSeek（OpenAI 兼容）跑通多轮对话
+    - 客户端维护 messages 实现记忆
+    - 观测 finish_reason 与 prompt_tokens
+    - 截断实验：max_tokens 触发 finish_reason=length
 - [ ] `week1/day2_function_calling.py` — 徒手实现 Function Calling 完整循环
 - [ ] `week1/day3_react.py` — 无框架 ReAct Agent（<200 行），Thought → Action → Observation
 - [ ] `week1/day4_memory.py` — 多轮记忆三方案对比：完整历史 / 滑动窗口 / 摘要压缩
@@ -21,3 +25,6 @@
 
 ### 2026-06-10
 仓库初始化。
+LLM 无状态，记忆是客户端累加 messages 造出来的
+亲眼验证 prompt_tokens 单调增长 = 上下文的代价
+finish_reason 的 stop / length 含义，截断实验怎么触发的
