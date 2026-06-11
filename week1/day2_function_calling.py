@@ -44,7 +44,7 @@ tools = [
 
 available = {"get_weather": get_weather, "calculator": calculator}
 
-messages = [{"role": "user", "content": "3 的 5 次方加 10 等于几?"}]
+messages = [{"role": "user", "content": "北京天气怎么样？顺便帮我算 23*45"}]
 
 while True:
     response = client.chat.completions.create(model="deepseek-chat", messages=messages, tools=tools)
