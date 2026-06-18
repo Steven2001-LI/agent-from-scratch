@@ -17,7 +17,12 @@
     - 多工具下模型自动选对工具（天气 / 计算器）
     - 并行工具调用：一次返回多个 tool_calls，for 循环逐个执行
     - 加 print 打开黑箱，让「决策—执行」链路可观测
-- [ ] `week1/day3_react.py` — 无框架 ReAct Agent（<200 行），Thought → Action → Observation
+- [x] `week1/day3_react.py`
+    - 无框架 ReAct Agent（<200 行）：Thought → Action → Observation 循环手写撑起
+    - 不用原生 Function Calling，用 prompt 教模型按 ReAct 格式输出纯文本
+    - 自写 parse() 正则解析 Action / Action Input / Final Answer
+    - 关键技巧 stop=["Observation:"]：掐断模型自我脑补，把观察结果话语权留给代码
+    - action 分支容错（工具名校验）+ 把模型输出与 Observation 都回拼 messages 形成"环"
 - [ ] `week1/day4_memory.py` — 多轮记忆三方案对比：完整历史 / 滑动窗口 / 摘要压缩
 
 ### Week 2（6.17–6.23）：RAG 全链路
@@ -39,3 +44,10 @@
 - 多工具时模型自主选对工具；一次能并行返回多个 tool_calls，靠 tool_call_id 把每个结果和对应调用对上号。
 - 两个坑：arguments 是 JSON 字符串，要 json.loads 转字典；tool 结果的 content 必须是字符串，数字要 str() 包一下。
 - 可观测性：答案对 ≠ 流程对。不打印中间过程，根本不知道模型有没有真用工具。
+
+### 2026-06-18
+- 手写 ReAct：day2 是 API 帮你管循环（结构化 tool_calls），day3 是自己用 prompt + 字符串解析把"思考-行动-观察"循环撑起来。
+- 模型并不"真会"调工具，只是被 prompt 教会按 Thought/Action/Action Input 格式吐字；真正解析、执行、回拼全是我的代码。
+- stop=["Observation:"] 是灵魂：不加，模型会自己脑补 Observation（幻觉），整个 ReAct 就废了。
+- 本质循环和 day2 完全一样，只是把"结构化对象"换成了"纯文本 + 正则"：tool_calls→parse()，role=tool→role=user+Observation 文本。
+- ReAct 优点：任何模型都能用、推理过程可解释；缺点：解析脆弱、格式易崩、更费 token——这正是 W3 引入 LangGraph 要标准化的部分。

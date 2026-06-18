@@ -94,37 +94,39 @@ def run(question: str, max_steps: int = 6):
     ]
 
     for step in range(max_steps):
-        # --- TODO 1: 请求模型 -------------------------------------------------
-        # 提示：关键技巧是加 stop=["Observation:"]，强制模型输出到 Action Input
-        #       就停下，把"观察结果"的话语权留给我们的代码（而不是让它自己脑补）。
-        # response = client.chat.completions.create(
-        #     model="deepseek-chat", messages=messages, stop=["Observation:"])
-        # text = response.choices[0].message.content
-        text = ""  # ← 替换成上面拿到的 text
+        # 1) 请求模型；stop=["Observation:"] 让它输出到 Action Input 就停，
+        #    把"观察结果"的话语权留给我们的代码（不让它自己脑补 Observation）。
+        response = client.chat.completions.create(
+            model="deepseek-chat", messages=messages, stop=["Observation:"])
+        text = response.choices[0].message.content
         print(f"\n----- Step {step+1} -----\n{text}")
 
-        # --- TODO 2: 解析模型输出 --------------------------------------------
-        # kind = parse(text) 的第一个元素，决定下一步走哪条分支
-        # result = parse(text)
-        # kind = result[0]
+        # 2) 解析模型输出
+        result = parse(text)
+        kind = result[0]
 
-        # --- TODO 3: 分支处理 ------------------------------------------------
-        # if kind == "final":
-        #     最终答案 = result[1]；打印并 return
-        #
-        # elif kind == "action":
-        #     name, arg = result[1], result[2]
-        #     a) 校验 name 是否在 TOOLS 里（不在就把错误当 Observation 喂回去，别崩）
-        #     b) observation = TOOLS[name](arg)   # 执行工具
-        #     c) 关键：把【模型这步的输出】和【我们的 Observation】都追加回 messages：
-        #          messages.append({"role": "assistant", "content": text})
-        #          messages.append({"role": "user",
-        #                           "content": f"Observation: {observation}"})
-        #        然后 continue，进入下一轮循环（这就是 ReAct 的"环"）
-        #
-        # else:  # unknown：模型没按格式来
-        #     把提示纠正一下当 Observation 喂回去，或直接 break
-        pass
+        # 3) 分支处理
+        if kind == "final":
+            print(f"\n✅ Final Answer: {result[1]}")
+            return result[1]
+
+        elif kind == "action":
+            name, arg = result[1], result[2]
+            if name not in TOOLS:                       # 校验：没这个工具就把错误当 Observation 喂回去，别崩
+                observation = f"错误：没有名为 {name} 的工具，可用工具：{list(TOOLS)}"
+            else:
+                observation = TOOLS[name](arg)          # 执行工具
+            print(f"Observation: {observation}")
+            # 关键：把【模型这步输出】和【我们的 Observation】都追加回 messages，再 continue（这就是 ReAct 的"环"）
+            messages.append({"role": "assistant", "content": text})
+            messages.append({"role": "user", "content": f"Observation: {observation}"})
+            continue
+
+        else:  # unknown：模型没按格式来，纠正一下喂回去
+            messages.append({"role": "assistant", "content": text})
+            messages.append({"role": "user",
+                             "content": "Observation: 格式不对，请严格按 Thought/Action/Action Input 或 Final Answer 输出。"})
+            continue
 
     print("⚠️ 达到最大步数仍未得到 Final Answer（注意死循环/截断边界，W4 会专门处理）")
 
