@@ -23,7 +23,11 @@
     - 自写 parse() 正则解析 Action / Action Input / Final Answer
     - 关键技巧 stop=["Observation:"]：掐断模型自我脑补，把观察结果话语权留给代码
     - action 分支容错（工具名校验）+ 把模型输出与 Observation 都回拼 messages 形成"环"
-- [ ] `week1/day4_memory.py` — 多轮记忆三方案对比：完整历史 / 滑动窗口 / 摘要压缩
+- [x] `week1/day4_memory.py`
+    - 多轮记忆三方案对比：完整历史 full / 滑动窗口 window / 摘要压缩 summary
+    - 同一段 6 轮脚本对话分别跑三种方案，打印每轮 prompt_tokens 做对比
+    - 设计"第5轮问名字"陷阱题：window 因名字被挤出窗口而答错，full/summary 答对
+    - 亲眼看到 token 曲线：full 单调涨 / window 被 k 钉平 / summary 居中且压缩轮会缩短消息数
 
 ### Week 2（6.17–6.23）：RAG 全链路
 - [ ] embedding + chunking 策略实验（3 种切分策略对比）
@@ -51,3 +55,11 @@
 - stop=["Observation:"] 是灵魂：不加，模型会自己脑补 Observation（幻觉），整个 ReAct 就废了。
 - 本质循环和 day2 完全一样，只是把"结构化对象"换成了"纯文本 + 正则"：tool_calls→parse()，role=tool→role=user+Observation 文本。
 - ReAct 优点：任何模型都能用、推理过程可解释；缺点：解析脆弱、格式易崩、更费 token——这正是 W3 引入 LangGraph 要标准化的部分。
+
+### 2026-06-18（day4）
+- 记忆管理是「记得住」和「不爆 token」之间的取舍，三种主流方案各有代价。
+- full：每次发全部历史，记得全但 prompt_tokens 单调增长，迟早撞上下文窗口上限。
+- window：只发 system + 最近 k 条，token 被 k 钉死，但会忘掉早期信息——实测第5轮问名字直接答错。
+- summary：历史超阈值就让模型把旧消息压成摘要，再带 system + 摘要 + 最近几条；用一次额外调用换「省 token 又不丢关键事实」，实测第5轮靠摘要里的「小李」答对。
+- 关键实现细节：摘要时保留最近 2 条不压缩（最近上下文最相关，全压会丢即时语境）；触发压缩那轮消息条数会明显变短。
+- 场景选择：短对话用 full；固定轮次/客服用 window；超长多轮、需长期记住关键事实用 summary（或几种混合）。
